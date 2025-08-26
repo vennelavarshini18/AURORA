@@ -1,0 +1,9 @@
+streamlit
+tensorflow
+google-generativeai
+python-dotenv
+nltk
+textblob
+contractions
+aksharamukha
+transformers
