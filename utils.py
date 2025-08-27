@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.models import load_model
-from tensorflow.keras.losses import sparse_categorical_crossentropy 
+from tensorflow.keras.losses import sparse_categorical_crossentropy
 
 class transblock(tf.keras.layers.Layer):
     def __init__(self, embdim, heads, ffdim, rate=0.1, **kwargs):
@@ -41,7 +41,6 @@ class transblock(tf.keras.layers.Layer):
         ffout = self.ff(out1)
         ffout = self.dp2(ffout, training=training)
         return self.ln2(out1 + ffout)
-
 
 class tokposemb(tf.keras.layers.Layer):
     def __init__(self, maxlen, vocab, embdim, **kwargs):
@@ -167,30 +166,122 @@ def init_gemini():
     genai.configure(api_key=api_key)
 
 def detect_language_variant(text: str) -> str:
-    """Detect whether the text is in Hindi (Devanagari) or Hinglish (Romanized Hindi)."""
-    if re.search(r"[\u0900-\u097F]", text):  # Devanagari range
+    if re.search(r"[\u0900-\u097F]", text):
         return "Hindi"
     return "Hinglish"
 
-def query_gemini(translated_text: str, content_type: str, style: str) -> str:
+def query_gemini(english_text: str, translated_text: str, content_type: str, style: str) -> str:
     init_gemini()
     model = genai.GenerativeModel("gemini-1.5-flash")
-
     lang_variant = detect_language_variant(translated_text)
-
     prompt = f"""
-You are given text written in **{lang_variant}**.
+You are a content assistant. You will receive an English input and its {lang_variant} translation.
 
---- SOURCE ---
+ENGLISH INPUT:
+{english_text}
+
+{lang_variant.upper()} TRANSLATION:
 {translated_text}
---- END ---
 
 Task:
-- Create a {content_type.strip()}.
-- Tone/style should be {style.strip()}.
-- Keep it coherent and engaging.
-- IMPORTANT: The output must strictly be in {lang_variant}, not in any other script or language.
-"""
+- Produce a {content_type.strip()} in the tone/style: {style.strip()}.
+- Preserve intent from the English input and the translation.
+- Output must be strictly in {lang_variant}. Do NOT switch scripts:
+  - If Hinglish, use Latin letters only.
+  - If Hindi, use Devanagari only.
 
+Output only the generated {content_type.strip()}.
+"""
     resp = model.generate_content(prompt)
-    return (resp.text or "").strip()
+    return (getattr(resp, "text", None) or "").strip()
+
+def polish_style(translated_text: str, style: str, max_words: int = 140) -> str:
+    init_gemini()
+    model = genai.GenerativeModel("gemini-1.5-flash")
+    lang_variant = detect_language_variant(translated_text)
+    prompt = f"""
+Rewrite the following {lang_variant} text in the style: {style}.
+- Fix grammar and fluency.
+- Keep meaning faithful to the source.
+- Limit length to ~{max_words} words.
+- Output strictly in {lang_variant} only.
+- If Hinglish, DO NOT use Devanagari. If Hindi, DO NOT use Latin.
+
+SOURCE:
+{translated_text}
+"""
+    resp = model.generate_content(prompt)
+    return (getattr(resp, "text", None) or "").strip()
+
+_AUDIENCE_GUIDE = {
+    "Kids": "Use simple words, friendly tone, short sentences, add warmth.",
+    "Boss / Work Email": "Be concise, polite, professional, clearly structured.",
+    "Romantic Partner": "Be affectionate, warm, intimate but tasteful.",
+    "Social Media Post": "Be catchy, compact, emoji-friendly if natural.",
+    "Friend": "Casual, relatable, a bit playful.",
+    "Parent / Elder": "Respectful, gentle, considerate and clear.",
+    "Teacher": "Polite, respectful, to the point.",
+    "Customer": "Empathetic, solution-oriented, clear next steps.",
+}
+
+def adapt_for_audience(text: str, audience: str) -> str:
+    init_gemini()
+    model = genai.GenerativeModel("gemini-1.5-flash")
+    lang_variant = detect_language_variant(text)
+    guidance = _AUDIENCE_GUIDE.get(audience, "Keep tone appropriate to the audience.")
+    prompt = f"""
+Adapt the following {lang_variant} text for this audience: {audience}.
+Guidelines: {guidance}
+
+Constraints:
+- Preserve the core meaning.
+- Use {lang_variant} only (no script switching).
+- Keep it concise and natural.
+
+TEXT:
+{text}
+"""
+    resp = model.generate_content(prompt)
+    return (getattr(resp, "text", None) or "").strip()
+
+def enrich_with_knowledge(original_text: str, translated_text: str, max_items: int = 3) -> str:
+    init_gemini()
+    model = genai.GenerativeModel("gemini-1.5-flash")
+    lang_variant = detect_language_variant(translated_text)
+    prompt = f"""
+You are a practical, grounded assistant. You will receive:
+- an English input (original)
+- its {lang_variant} translation (translated)
+
+English input:
+{original_text}
+
+{lang_variant} translation:
+{translated_text}
+
+Task:
+1) Choose exactly one domain from this list: [Travel, Food, People/Compliments, Music/Movies, Education, Productivity, Health, Culture, Other].
+2) In one sentence, state the chosen domain and a one-line rationale grounded in the English input (mention a short phrase from the English input in quotes).
+3) Provide {max_items} concise, practical, culturally relevant suggestions related to that domain. Each suggestion should be one line and action-oriented or immediately useful to a human reader.
+
+Formatting rules:
+- Begin with: Domain: <Domain> — <one-line rationale>
+- Then provide bullet lines (prefixed with "- ") for each suggestion.
+- Output must be strictly in {lang_variant} only. If Hinglish, use Latin letters only; if Hindi, use Devanagari only.
+- Do NOT produce academic lecture-style output. Keep the suggestions practical and short.
+
+English input: "{original_text}"
+{lang_variant} translation: "{translated_text}"
+
+Now produce the output.
+"""
+    resp = model.generate_content(prompt)
+    return (getattr(resp, "text", None) or "").strip()
+
+STYLE_PRESETS = [
+    "Formal", "Casual", "Poetic", "Cinematic", "Bollywood Dialogue",
+    "Motivational Speech", "News Headline", "Meme Caption",
+    "Storyteller", "Romantic", "Inspirational", "Witty One-liner"
+]
+
+AUDIENCE_PRESETS = list(_AUDIENCE_GUIDE.keys())
