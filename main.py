@@ -143,13 +143,18 @@ if "translated_text" in st.session_state:
         max_items = st.slider("How many suggestions?", min_value=3, max_value=6, value=3)
         if st.button("🧠 Enrich with Knowledge"):
             try:
-                enriched = enrich_with_knowledge(st.session_state.get("english_text", ""), st.session_state["translated_text"], max_items=max_items)
+                # 🔑 Uses LangChain tool-calling first, then falls back to Gemini prompt
+                enriched = enrich_with_knowledge(
+                    st.session_state.get("english_text", ""),
+                    st.session_state["translated_text"],
+                    max_items=max_items
+                )
                 if enriched:
                     st.session_state["knowledge_text"] = enriched
                 else:
                     st.info("No knowledge suggestions returned.")
             except Exception as e:
-                st.error(f"Gemini error: {e}")
+                st.error(f"Enrichment error: {e}")
         if "knowledge_text" in st.session_state and st.session_state["knowledge_text"]:
             st.markdown("**Contextual Suggestions:**")
             st.markdown(f"<div class='block'>{st.session_state['knowledge_text']}</div>", unsafe_allow_html=True)

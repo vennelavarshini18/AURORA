@@ -1,6 +1,8 @@
 import os
 import re
 import pickle
+import ast
+import operator as _op
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.preprocessing.sequence import pad_sequences
@@ -244,14 +246,194 @@ TEXT:
     resp = model.generate_content(prompt)
     return (getattr(resp, "text", None) or "").strip()
 
+try:
+    import wikipedia
+except Exception:
+    wikipedia = None
+
+try:
+    from duckduckgo_search import ddg
+except Exception:
+    ddg = None
+
+try:
+    from langchain.agents import initialize_agent, AgentType
+    from langchain.tools import Tool
+    from langchain_google_genai import ChatGoogleGenerativeAI
+except Exception:
+    initialize_agent = None
+    AgentType = None
+    Tool = None
+    ChatGoogleGenerativeAI = None
+
+def _wiki_tool_func(q: str) -> str:
+    if not wikipedia:
+        return "Wikipedia library not installed."
+    try:
+        hits = wikipedia.search(q, results=5)
+        if not hits:
+            return "No Wikipedia results found."
+        pieces = []
+        for title in hits[:3]:
+            try:
+                summ = wikipedia.summary(title, sentences=2)
+            except Exception:
+                summ = ""
+            pieces.append(f"{title}: {summ}")
+        return "\n".join(pieces)
+    except Exception as e:
+        return f"Wikipedia error: {e}"
+
+def _duck_tool_func(q: str) -> str:
+    if not ddg:
+        return "DuckDuckGo search library not installed."
+    try:
+        results = ddg(q, max_results=5)
+        if not results:
+            return "No web results found."
+        bullets = []
+        for r in results[:4]:
+            title = r.get("title") or ""
+            snippet = r.get("body") or r.get("snippet") or ""
+            href = r.get("href") or r.get("url") or ""
+            short = f"{title} — {snippet}"
+            if href:
+                short += f" ({href})"
+            bullets.append(short)
+        return "\n".join(bullets)
+    except Exception as e:
+        return f"DuckDuckGo error: {e}"
+
+_allowed_ops = {
+    ast.Add: _op.add,
+    ast.Sub: _op.sub,
+    ast.Mult: _op.mul,
+    ast.Div: _op.truediv,
+    ast.Pow: _op.pow,
+    ast.USub: _op.neg,
+    ast.UAdd: lambda x: x,
+}
+
+def _safe_eval(node):
+    if isinstance(node, ast.Constant):  
+        if isinstance(node.value, (int, float)):
+            return node.value
+        raise ValueError("Only numeric constants allowed")
+    if isinstance(node, ast.Num):  # 
+        return node.n
+    if isinstance(node, ast.BinOp):
+        op_type = type(node.op)
+        if op_type not in _allowed_ops:
+            raise ValueError("Operator not allowed")
+        left = _safe_eval(node.left)
+        right = _safe_eval(node.right)
+        return _allowed_ops[op_type](left, right)
+    if isinstance(node, ast.UnaryOp):
+        op_type = type(node.op)
+        if op_type not in _allowed_ops:
+            raise ValueError("Unary operator not allowed")
+        operand = _safe_eval(node.operand)
+        return _allowed_ops[op_type](operand)
+    raise ValueError("Unsupported expression")
+
+def _math_tool_func(q: str) -> str:
+    try:
+        expr = q.strip()
+        node = ast.parse(expr, mode='eval').body
+        val = _safe_eval(node)
+        return str(val)
+    except Exception:
+        return "Math tool supports simple arithmetic expressions (numbers and + - * / **)."
+
+def _keywords_tool(q: str) -> str:
+    if not isinstance(q, str) or not q.strip():
+        return "No input text."
+    words = re.findall(r"\w+", q.lower())
+    words = [w for w in words if w not in _eng_stop and len(w) > 2]
+    freq = {}
+    for w in words:
+        freq[w] = freq.get(w, 0) + 1
+    sorted_words = sorted(freq.items(), key=lambda x: -x[1])
+    top = [w for w, _ in sorted_words[:7]]
+    if not top:
+        return "No strong keywords found."
+    return ", ".join(top)
+
+def get_langchain_agent():
+    if initialize_agent is None or Tool is None or ChatGoogleGenerativeAI is None:
+        return None
+    tools = []
+    try:
+        tools.append(Tool.from_function(_wiki_tool_func, name="wikipedia_search",
+                                        description="Use for factual summaries about topics (input: short topic or phrase). Return concise summary lines."))
+    except Exception:
+        pass
+    try:
+        tools.append(Tool.from_function(_duck_tool_func, name="web_search",
+                                        description="Use for up-to-date web snippets; good for local tips, lists, small how-tos. Input: query."))
+    except Exception:
+        pass
+    try:
+        tools.append(Tool.from_function(_math_tool_func, name="math_solver",
+                                        description="Use for simple arithmetic or numeric calculations. Input: expression."))
+    except Exception:
+        pass
+    try:
+        tools.append(Tool.from_function(_keywords_tool, name="keyword_extractor",
+                                        description="Use to extract short list of keywords from input to help refine searches. Input: text."))
+    except Exception:
+        pass
+
+    if not tools:
+        return None
+
+    try:
+        init_gemini()
+        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
+        agent = initialize_agent(
+            tools,
+            llm,
+            agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+            verbose=False,
+            handle_parsing_errors=True,
+        )
+        return agent
+    except Exception:
+        return None
+
 def enrich_with_knowledge(original_text: str, translated_text: str, max_items: int = 3) -> str:
+    agent = get_langchain_agent()
+    lang_variant = detect_language_variant(translated_text)
+    if agent:
+        try:
+            instruction = (
+                "You are a grounded assistant that can call tools. "
+                "Decide whether calling tools will yield helpful factual/contextual information for the user's input. "
+                "If you call tools, synthesize their outputs into a short, practical result in the user's language variant.\n\n"
+                f"Language variant required for final output: {lang_variant}.\n"
+                "Output format if using tools:\n"
+                "Domain: <one-word domain> — <one-line rationale>\n"
+                "- suggestion 1\n"
+                "- suggestion 2\n"
+                f"- suggestion up to {max_items}\n\n"
+                "If NO tool is useful, respond exactly with: NO_TOOL\n\n"
+                "Inputs:\n"
+                f"English: \"{original_text}\"\n"
+                f"Translation: \"{translated_text}\"\n"
+            )
+            agent_response = agent.run(instruction)
+            if isinstance(agent_response, str) and agent_response.strip():
+                if agent_response.strip().upper() != "NO_TOOL":
+                    return agent_response.strip()
+        except Exception:
+            pass
+
     init_gemini()
     model = genai.GenerativeModel("gemini-1.5-flash")
-    lang_variant = detect_language_variant(translated_text)
     prompt = f"""
 You are a practical, grounded assistant. You will receive:
-- an English input (original)
-- its {lang_variant} translation (translated)
+- an English input
+- its {lang_variant} translation
 
 English input:
 {original_text}
@@ -260,19 +442,18 @@ English input:
 {translated_text}
 
 Task:
-1) Choose exactly one domain from this list: [Travel, Food, People/Compliments, Music/Movies, Education, Productivity, Health, Culture, Other].
-2) In one sentence, state the chosen domain and a one-line rationale grounded in the English input (mention a short phrase from the English input in quotes).
-3) Provide {max_items} concise, practical, culturally relevant suggestions related to that domain. Each suggestion should be one line and action-oriented or immediately useful to a human reader.
+1) Choose exactly one domain from [Travel, Food, People/Compliments, Movies/Music, Education, Productivity, Health, Culture, Other].
+2) In one sentence, state the chosen domain and a one-line rationale grounded in the English input (quote a short phrase from the English input).
+3) Provide {max_items} concise, practical, culturally-relevant suggestions (actionable tips, checklist items, or short recommendations).
+Formatting:
+Domain: <Domain> — <rationale>
+- suggestion 1
+- suggestion 2
+- suggestion 3
 
-Formatting rules:
-- Begin with: Domain: <Domain> — <one-line rationale>
-- Then provide bullet lines (prefixed with "- ") for each suggestion.
-- Output must be strictly in {lang_variant} only. If Hinglish, use Latin letters only; if Hindi, use Devanagari only.
-- Do NOT produce academic lecture-style output. Keep the suggestions practical and short.
-
-English input: "{original_text}"
-{lang_variant} translation: "{translated_text}"
-
+IMPORTANT:
+- Output must be strictly in {lang_variant}. If Hinglish, use Latin letters only; if Hindi, use Devanagari only.
+- Keep suggestions short, actionable, and human-friendly (no lecture tone).
 Now produce the output.
 """
     resp = model.generate_content(prompt)

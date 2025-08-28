@@ -7,3 +7,7 @@ textblob
 contractions
 aksharamukha
 transformers
+langchain
+langchain-community
+langchain-google-generative-ai
+beautifulsoup4
