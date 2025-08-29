@@ -159,12 +159,32 @@ def translate_greedy(model, src_tokenizer, tgt_tokenizer, english_text: str) -> 
 
 import google.generativeai as genai
 from dotenv import load_dotenv
+import streamlit as st
 
 def init_gemini():
-    load_dotenv()
-    api_key = os.getenv("GEMINI_API_KEY", "")
+    """
+    Initialize Google Generative AI (Gemini) client.
+
+    Behavior:
+    - Prefer Streamlit secrets (st.secrets["GEMINI_API_KEY"]) when available (deployed on Streamlit Cloud).
+    - Fallback to local .env variable (loaded via python-dotenv) when Streamlit secrets are not available (local dev).
+    - Raises RuntimeError if no key is found.
+    """
+    api_key = None
+    # First try Streamlit secrets (works on Streamlit Community Cloud)
+    try:
+        api_key = st.secrets["GEMINI_API_KEY"]
+    except Exception:
+        api_key = None
+
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not set in .env")
+        # Fallback for local development: load from .env
+        load_dotenv()
+        api_key = os.getenv("GEMINI_API_KEY", "")
+
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY not found in Streamlit secrets or local .env")
+
     genai.configure(api_key=api_key)
 
 def detect_language_variant(text: str) -> str:
