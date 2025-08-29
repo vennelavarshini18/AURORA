@@ -12,25 +12,59 @@ from utils import (
 )
 
 st.set_page_config(page_title="AURORA", layout="wide")
+
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
-
     :root {
       --bg: #f6f7fb;
       --card: #ffffff;
       --muted: #6b7280;
+      --text: #0f172a;
       --accent1: #7c4dff;
       --accent2: #3dd1d6;
       --radius: 16px;
+      --input-bg: #ffffff;
+      --input-border: rgba(15,23,42,0.08);
+      --shadow: 0 8px 22px rgba(16,24,40,0.05);
+      --card-border: rgba(15,23,42,0.06);
+      --sidebar-bg: linear-gradient(180deg, #fff, #f9f9ff);
+      --button-shadow: 0 8px 22px rgba(124,77,255,0.15);
+      --placeholder: rgba(15,23,42,0.35);
     }
 
-    /* Page */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #071026;
+        --card: #0f1720;
+        --muted: #9ca3af;
+        --text: #e6eef6;
+        --accent1: #8b5cf6;
+        --accent2: #06b6d4;
+        --radius: 16px;
+        --input-bg: #0b0f14;
+        --input-border: rgba(255,255,255,0.04);
+        --shadow: 0 10px 30px rgba(2,6,23,0.7);
+        --card-border: rgba(255,255,255,0.04);
+        --sidebar-bg: linear-gradient(180deg, #071025, #081127);
+        --button-shadow: 0 8px 30px rgba(11,18,48,0.6);
+        --placeholder: rgba(230,238,246,0.35);
+      }
+    }
+
+    /* Fallback for Streamlit internal dark-theme marker (some builds) */
+    [data-theme="dark"] :root,
+    body[data-theme="dark"] :root {
+      /* the @media will usually handle this, but keep as a fallback */
+    }
+
+    /* Page / global */
     body, .stApp {
       background: var(--bg);
+      color: var(--text);
       font-family: 'Poppins', system-ui, sans-serif;
-      color: #0f172a;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     /* Header block */
@@ -71,11 +105,11 @@ st.markdown(
 
     /* Section titles */
     .stSubheader, .stMarkdown h2 {
-      font-size: 1.5rem !important;
-      font-weight: 700 !important;
-      margin-top: 2rem !important;
-      margin-bottom: 1rem !important;
-      color: #111827 !important;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      color: var(--text) ;
     }
 
     /* Cards */
@@ -85,56 +119,68 @@ st.markdown(
       padding:22px;
       font-size:1.05rem;
       line-height:1.6;
-      box-shadow: 0 8px 22px rgba(16,24,40,0.05);
-      border: 1px solid rgba(15,23,42,0.06);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--card-border);
       margin-top: 0.8rem;
+      color: var(--text);
     }
 
     /* Inputs */
-    textarea, input[type="text"], .stTextArea>div>textarea {
-      border-radius:14px !important;
-      padding:18px !important;
-      box-shadow:none !important;
-      border:1px solid rgba(15,23,42,0.08) !important;
-      background: #fff !important;
+    textarea, input[type="text"], .stTextArea>div>textarea, .stTextInput>div>input {
+      border-radius:14px;
+      padding:18px;
+      box-shadow:none;
+      border:1px solid var(--input-border);
+      background: var(--input-bg);
+      color: var(--text);
       resize: vertical;
-      min-height:140px !important;
+      min-height:140px;
       font-family: 'Poppins', sans-serif;
-      font-size: 1.05rem !important;
+      font-size: 1.05rem;
       line-height:1.6;
+    }
+    /* placeholder color */
+    textarea::placeholder, input::placeholder {
+      color: var(--placeholder);
+      opacity: 1;
     }
 
     /* Buttons (global) */
     .stButton>button, button {
-      border-radius:14px !important;
-      padding:12px 20px !important;
-      background-image: linear-gradient(90deg,var(--accent1),var(--accent2)) !important;
-      color: #fff !important;
+      border-radius:14px;
+      padding:12px 20px;
+      background-image: linear-gradient(90deg,var(--accent1),var(--accent2));
+      color: #fff;
       font-weight:600;
       font-size: 0.95rem;
-      border:none !important;
-      box-shadow: 0 8px 22px rgba(124,77,255,0.15) !important;
-      transition: transform 0.15s ease;
+      border:none;
+      box-shadow: var(--button-shadow);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
     .stButton>button:hover {
       transform: translateY(-2px);
     }
 
-    /* Secondary button */
-    .clear-btn { 
-      background: transparent !important; 
-      color:var(--accent1) !important; 
-      border:1px solid rgba(124,77,255,0.2) !important; 
-      box-shadow:none !important; 
+    /* Secondary button (clear) */
+    .clear-btn {
+      background: transparent;
+      color: var(--accent1);
+      border:1px solid rgba(124,77,255,0.18);
+      box-shadow:none;
     }
 
     .subtle { color: var(--muted); font-size:0.95rem; }
 
     /* Sidebar */
     [data-testid="stSidebar"] {
-      background: linear-gradient(180deg, #fff, #f9f9ff);
+      background: var(--sidebar-bg);
       border-right: 1px solid rgba(15,23,42,0.05);
       padding-top: 1rem;
+      color: var(--text);
+    }
+    [data-testid="stSidebar"] * {
+      color: var(--text);
+      fill: var(--text);
     }
     [data-testid="stSidebar"] .stButton>button { width:100%; }
 
@@ -144,14 +190,18 @@ st.markdown(
       justify-content:center;
     }
     .stTabs [role="tab"] {
-      border-radius: 12px !important;
-      padding: 10px 18px !important;
+      border-radius: 12px;
+      padding: 10px 18px;
       font-weight:600;
       font-size:1.05rem;
+      color: var(--text) !important;
+      background: transparent;
+      border: 1px solid transparent;
     }
     .stTabs [aria-selected="true"] {
       background: linear-gradient(90deg, var(--accent1), var(--accent2)) !important;
       color:white !important;
+      box-shadow: var(--button-shadow);
     }
 
     /* Translated text block improvements */
@@ -160,11 +210,14 @@ st.markdown(
       margin-bottom: 2rem;
     }
     .translated-block textarea {
-      min-height: 140px !important;
-      font-size: 1.1rem !important;
-      padding: 18px !important;
-      border-radius: 16px !important;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.05) !important;
+      min-height: 140px;
+      font-size: 1.1rem;
+      padding: 18px;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--card-border);
     }
 
     /* Dropdown row */
@@ -178,16 +231,24 @@ st.markdown(
       flex: 1;
     }
 
-    /* Action buttons inside tabs → add vertical spacing */
+    /* Action buttons inside tabs → vertical spacing */
     .stTabs .stButton>button {
-      margin-top: 1.5rem !important;
-      margin-bottom: 1.5rem !important;
+      margin-top: 1.5rem;
+      margin-bottom: 1.5rem;
     }
 
+    /* Responsiveness */
     @media (max-width: 768px) {
       .aurora-title { font-size:26px; }
       .aurora-logo { width:56px; height:56px; font-size:22px; }
       .dropdown-row { flex-direction: column; }
+    }
+
+    /* Minor fixes for Streamlit internal class differences */
+    /* Make cards inside expanders and other widgets inherit our card background */
+    .css-1v3fvcr, .css-1d391kg {
+      background: transparent !important;
+      color: var(--text) !important;
     }
     </style>
     """,
