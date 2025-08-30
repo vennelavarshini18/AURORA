@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.models import load_model
 from tensorflow.keras.losses import sparse_categorical_crossentropy
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 class transblock(tf.keras.layers.Layer):
     def __init__(self, embdim, heads, ffdim, rate=0.1, **kwargs):
         super().__init__(**kwargs)
