@@ -12,124 +12,118 @@ from utils import (
 )
 
 st.set_page_config(page_title="AURORA", layout="wide")
-
 st.markdown(
     """
     <style>
     :root {
       --bg: #f6f7fb;
-      --card: #ffffff;
+      --card: rgba(255,255,255,0.75);
       --muted: #6b7280;
       --text: #0f172a;
       --accent1: #7c4dff;
       --accent2: #3dd1d6;
-      --radius: 16px;
-      --input-bg: #ffffff;
+      --radius: 20px;
+      --input-bg: rgba(255,255,255,0.85);
       --input-border: rgba(15,23,42,0.08);
-      --shadow: 0 8px 22px rgba(16,24,40,0.05);
+      --shadow: 0 10px 28px rgba(16,24,40,0.1);
       --card-border: rgba(15,23,42,0.06);
       --sidebar-bg: linear-gradient(180deg, #fff, #f9f9ff);
-      --button-shadow: 0 8px 22px rgba(124,77,255,0.15);
+      --button-shadow: 0 10px 26px rgba(124,77,255,0.25);
       --placeholder: rgba(15,23,42,0.35);
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #071026;
-        --card: #0f1720;
+        --bg: #050a1a;
+        --card: rgba(15,18,30,0.8);
         --muted: #9ca3af;
         --text: #e6eef6;
         --accent1: #8b5cf6;
         --accent2: #06b6d4;
-        --radius: 16px;
-        --input-bg: #0b0f14;
-        --input-border: rgba(255,255,255,0.04);
-        --shadow: 0 10px 30px rgba(2,6,23,0.7);
-        --card-border: rgba(255,255,255,0.04);
-        --sidebar-bg: linear-gradient(180deg, #071025, #081127);
-        --button-shadow: 0 8px 30px rgba(11,18,48,0.6);
+        --radius: 20px;
+        --input-bg: rgba(12,14,24,0.85);
+        --input-border: rgba(255,255,255,0.05);
+        --shadow: 0 12px 34px rgba(2,6,23,0.55);
+        --card-border: rgba(255,255,255,0.05);
+        --sidebar-bg: linear-gradient(180deg, #071025, #0b1128);
+        --button-shadow: 0 10px 28px rgba(11,18,48,0.7);
         --placeholder: rgba(230,238,246,0.35);
       }
     }
 
-    /* Fallback for Streamlit internal dark-theme marker (some builds) */
-    [data-theme="dark"] :root,
-    body[data-theme="dark"] :root {
-      /* the @media will usually handle this, but keep as a fallback */
-    }
-
-    /* Page / global */
     body, .stApp {
       background: var(--bg);
       color: var(--text);
       font-family: 'Poppins', system-ui, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
 
-    /* Header block */
+    /* ---------------- HEADER ---------------- */
     .aurora-header {
-      display:flex;
-      gap:18px;
-      align-items:center;
-      margin-bottom: 2rem;
-      padding: 12px 0;
+      text-align: center;
+      margin: 2rem auto 3rem auto;
     }
     .aurora-logo {
-      width:72px;
-      height:72px;
-      border-radius:18px;
-      background: linear-gradient(135deg,var(--accent1),var(--accent2));
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      margin: 0 auto 1rem auto;
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
       display:flex;
       align-items:center;
       justify-content:center;
-      color:white;
-      font-weight:700;
-      box-shadow: 0 10px 32px rgba(68,56,255,0.15);
-      font-size:32px;
+      box-shadow: 0 15px 35px rgba(124,77,255,0.35),
+                  0 10px 25px rgba(24,255,255,0.25);
+      animation: float 4s ease-in-out infinite;
+    }
+    .aurora-logo span {
+      font-size: 46px;
+      font-weight: 900;
+      color: white;
+      text-shadow: 0 3px 14px rgba(0,0,0,0.3);
+      font-family: "Segoe UI", sans-serif;
     }
     .aurora-title {
-      font-size:34px;
-      font-weight:800;
-      margin:0;
+      font-size: 54px;
+      font-weight: 900;
+      margin: 0;
       background: linear-gradient(90deg, var(--accent1), var(--accent2));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-shadow: 0 3px 14px rgba(0,0,0,0.25);
     }
     .aurora-sub {
-      color:var(--muted);
-      margin-top:6px;
-      font-size:1.05rem;
-      font-weight:400;
+      margin-top: 12px;
+      font-size: 1.35rem;
+      color: var(--muted);
+      font-weight: 400;
     }
 
-    /* Section titles */
-    .stSubheader, .stMarkdown h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-top: 2rem;
-      margin-bottom: 1rem;
-      color: var(--text) ;
+    @keyframes float {
+      0% { transform: translateY(0px);}
+      50% { transform: translateY(-8px);}
+      100% { transform: translateY(0px);}
     }
 
-    /* Cards */
+    /* ---------------- CARDS ---------------- */
     .result, .block {
-      background:var(--card);
+      background: var(--card);
       border-radius: var(--radius);
-      padding:22px;
-      font-size:1.05rem;
-      line-height:1.6;
+      padding: 24px;
+      font-size: 1.1rem;
+      line-height: 1.65;
       box-shadow: var(--shadow);
       border: 1px solid var(--card-border);
-      margin-top: 0.8rem;
-      color: var(--text);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      margin-top: 1rem;
     }
 
-    /* Inputs */
+    /* ---------------- INPUTS ---------------- */
     textarea, input[type="text"], .stTextArea>div>textarea, .stTextInput>div>input {
-      border-radius:14px;
+      border-radius:16px;
       padding:18px;
-      box-shadow:none;
       border:1px solid var(--input-border);
       background: var(--input-bg);
       color: var(--text);
@@ -139,55 +133,38 @@ st.markdown(
       font-size: 1.05rem;
       line-height:1.6;
     }
-    /* placeholder color */
     textarea::placeholder, input::placeholder {
       color: var(--placeholder);
-      opacity: 1;
     }
 
-    /* Buttons (global) */
+    /* ---------------- BUTTONS ---------------- */
     .stButton>button, button {
       border-radius:14px;
-      padding:12px 20px;
-      background-image: linear-gradient(90deg,var(--accent1),var(--accent2));
+      padding:12px 24px;
+      background-image: linear-gradient(90deg, var(--accent1), var(--accent2));
       color: #fff;
       font-weight:600;
-      font-size: 0.95rem;
+      font-size: 1rem;
       border:none;
       box-shadow: var(--button-shadow);
       transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
     .stButton>button:hover {
       transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(124,77,255,0.3);
     }
 
-    /* Secondary button (clear) */
-    .clear-btn {
-      background: transparent;
-      color: var(--accent1);
-      border:1px solid rgba(124,77,255,0.18);
-      box-shadow:none;
-    }
-
-    .subtle { color: var(--muted); font-size:0.95rem; }
-
-    /* Sidebar */
+    /* ---------------- SIDEBAR ---------------- */
     [data-testid="stSidebar"] {
       background: var(--sidebar-bg);
-      border-right: 1px solid rgba(15,23,42,0.05);
+      border-right: 1px solid rgba(15,23,42,0.08);
       padding-top: 1rem;
-      color: var(--text);
     }
-    [data-testid="stSidebar"] * {
-      color: var(--text);
-      fill: var(--text);
-    }
-    [data-testid="stSidebar"] .stButton>button { width:100%; }
 
-    /* Tabs */
+    /* ---------------- TABS ---------------- */
     .stTabs [role="tablist"] {
-      gap:20px;
-      justify-content:center;
+      gap: 20px;
+      justify-content: center;
     }
     .stTabs [role="tab"] {
       border-radius: 12px;
@@ -204,64 +181,21 @@ st.markdown(
       box-shadow: var(--button-shadow);
     }
 
-    /* Translated text block improvements */
-    .translated-block {
-      margin-top: 2rem;
-      margin-bottom: 2rem;
-    }
-    .translated-block textarea {
-      min-height: 140px;
-      font-size: 1.1rem;
-      padding: 18px;
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-      background: var(--card);
-      color: var(--text);
-      border: 1px solid var(--card-border);
-    }
-
-    /* Dropdown row */
-    .dropdown-row {
-      display: flex;
-      gap: 20px;
-      margin-top: 1.2rem;
-      margin-bottom: 1.5rem;
-    }
-    .dropdown-row .stSelectbox {
-      flex: 1;
-    }
-
-    /* Action buttons inside tabs → vertical spacing */
-    .stTabs .stButton>button {
-      margin-top: 1.5rem;
-      margin-bottom: 1.5rem;
-    }
-
-    /* Responsiveness */
     @media (max-width: 768px) {
-      .aurora-title { font-size:26px; }
-      .aurora-logo { width:56px; height:56px; font-size:22px; }
-      .dropdown-row { flex-direction: column; }
-    }
-
-    /* Minor fixes for Streamlit internal class differences */
-    /* Make cards inside expanders and other widgets inherit our card background */
-    .css-1v3fvcr, .css-1d391kg {
-      background: transparent !important;
-      color: var(--text) !important;
+      .aurora-title { font-size:32px; }
+      .aurora-logo { width:75px; height:75px; }
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
-
 st.markdown(
     """
     <div class='aurora-header'>
-      <div class='aurora-logo'>A</div>
+      <div class='aurora-logo'><span>A</span></div>
       <div>
-        <div class='aurora-title'>AURORA <span style='font-size:20px;opacity:0.95'>✨</span></div>
-        <div class='aurora-sub'>Instant, natural translations — with creative transforms</div>
+        <div class='aurora-title'>AURORA</div>
+        <div class='aurora-sub'>Where Translation meets Creativity</div>
       </div>
     </div>
     """,
@@ -327,22 +261,22 @@ if "translated_text" in st.session_state:
     ])
 
     with tab1:
-        st.markdown("<div class='subtle'>Turn your translation into creative forms in your preferred language. </div>", unsafe_allow_html=True)
+        st.markdown("<div class='subtle'>Turn your translation into creative forms in your preferred language.</div>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1:
             content_type = st.selectbox("Content type", ["Story", "Poem", "Description", "Article", "Ad copy"])
         with c2:
             style = st.selectbox("Style", ["Humor", "Creative", "Interesting", "Formal", "Romantic", "Inspirational"])
-        if st.button("✨ Generate", key="generate_btn", help="Generate content", type="primary"):
+        if st.button("✨ Generate", key="generate_btn"):
             try:
                 out = query_gemini(st.session_state.get("english_text", ""), st.session_state["translated_text"], content_type, style)
                 if not out:
-                    st.info("Gemini returned empty text. Try a different combination.")
+                    st.info("Gemini returned empty text. Try again.")
                 else:
                     st.session_state["generated_text"] = out
             except Exception as e:
                 st.error(f"Gemini error: {e}")
-        if "generated_text" in st.session_state and st.session_state["generated_text"]:
+        if "generated_text" in st.session_state:
             st.markdown("**Output:**")
             st.markdown(f"<div class='block'>{st.session_state['generated_text']}</div>", unsafe_allow_html=True)
 
@@ -351,53 +285,40 @@ if "translated_text" in st.session_state:
         style_choice = st.selectbox("Choose a style", STYLE_PRESETS, index=0, key="style_polish")
         if st.button("🪄 Rewrite in this style", key="polish_btn"):
             try:
-                src_text = st.session_state["translated_text"]
-                polished = polish_style(src_text, style_choice)
+                polished = polish_style(st.session_state["translated_text"], style_choice)
                 if polished:
                     st.session_state["styled_text"] = polished
-                else:
-                    st.info("No text returned. Try another style.")
             except Exception as e:
                 st.error(f"Gemini error: {e}")
-        if "styled_text" in st.session_state and st.session_state["styled_text"]:
+        if "styled_text" in st.session_state:
             st.markdown("**Polished / Transformed:**")
             st.markdown(f"<div class='block'>{st.session_state['styled_text']}</div>", unsafe_allow_html=True)
 
     with tab3:
-        st.markdown("<div class='subtle'>Retarget the message for a specific audience (boss, kids, partner, etc.).</div>", unsafe_allow_html=True)
+        st.markdown("<div class='subtle'>Retarget the message for a specific audience.</div>", unsafe_allow_html=True)
         audience = st.selectbox("Audience", AUDIENCE_PRESETS, index=0, key="audience_pick")
         use_styled = "styled_text" in st.session_state and bool(st.session_state["styled_text"])
-        src_label = "Polished text" if use_styled else "Translated text"
-        st.caption(f"Input source: {src_label}")
         if st.button("🎯 Adapt", key="adapt_btn"):
             try:
                 source_text = st.session_state["styled_text"] if use_styled else st.session_state["translated_text"]
                 adapted = adapt_for_audience(source_text, audience)
                 if adapted:
                     st.session_state["adapted_text"] = adapted
-                else:
-                    st.info("No text returned. Try another audience.")
             except Exception as e:
                 st.error(f"Gemini error: {e}")
-        if "adapted_text" in st.session_state and st.session_state["adapted_text"]:
+        if "adapted_text" in st.session_state:
             st.markdown("**Audience-Adapted Output:**")
             st.markdown(f"<div class='block'>{st.session_state['adapted_text']}</div>", unsafe_allow_html=True)
 
     with tab4:
-        max_items = st.slider("How many suggestions?", min_value=3, max_value=6, value=3)
+        max_items = st.slider("How many suggestions?", 3, 6, 3)
         if st.button("🧠 Enrich with Knowledge", key="knowledge_btn"):
             try:
-                enriched = enrich_with_knowledge(
-                    st.session_state.get("english_text", ""),
-                    st.session_state["translated_text"],
-                    max_items=max_items
-                )
+                enriched = enrich_with_knowledge(st.session_state.get("english_text", ""), st.session_state["translated_text"], max_items=max_items)
                 if enriched:
                     st.session_state["knowledge_text"] = enriched
-                else:
-                    st.info("No knowledge suggestions returned.")
             except Exception as e:
                 st.error(f"Enrichment error: {e}")
-        if "knowledge_text" in st.session_state and st.session_state["knowledge_text"]:
+        if "knowledge_text" in st.session_state:
             st.markdown("**Contextual Suggestions:**")
             st.markdown(f"<div class='block'>{st.session_state['knowledge_text']}</div>", unsafe_allow_html=True)
