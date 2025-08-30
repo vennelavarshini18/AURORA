@@ -1,4 +1,6 @@
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 import streamlit as st
 import requests
 from utils import (
@@ -11,6 +13,9 @@ from utils import (
     STYLE_PRESETS,
     AUDIENCE_PRESETS,
 )
+
+API_BASE = os.environ.get("AURORA_API_BASE", "https://aurora-api.onrender.com")
+API_URL = f"{API_BASE.rstrip('/')}/translate"
 
 st.set_page_config(page_title="AURORA", layout="wide")
 st.markdown(
@@ -32,7 +37,6 @@ st.markdown(
       --button-shadow: 0 10px 26px rgba(124,77,255,0.25);
       --placeholder: rgba(15,23,42,0.35);
     }
-
     @media (prefers-color-scheme: dark) {
       :root {
         --bg: #050a1a;
@@ -51,21 +55,14 @@ st.markdown(
         --placeholder: rgba(230,238,246,0.35);
       }
     }
-
-    body, .stApp {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Poppins', system-ui, sans-serif;
-    }
-
+    body, .stApp { background: var(--bg); color: var(--text); font-family: 'Poppins', system-ui, sans-serif; }
     .aurora-header { text-align: center; margin: 2rem auto 3rem auto; }
     .aurora-logo {
       width: 110px; height: 110px; border-radius: 50%;
       margin: 0 auto 1rem auto;
       background: linear-gradient(135deg, var(--accent1), var(--accent2));
       display:flex; align-items:center; justify-content:center;
-      box-shadow: 0 15px 35px rgba(124,77,255,0.35),
-                  0 10px 25px rgba(24,255,255,0.25);
+      box-shadow: 0 15px 35px rgba(124,77,255,0.35), 0 10px 25px rgba(24,255,255,0.25);
       animation: float 4s ease-in-out infinite;
     }
     .aurora-logo span { font-size: 46px; font-weight: 900; color: white; }
@@ -88,10 +85,12 @@ st.markdown(
       background: var(--input-bg); color: var(--text); min-height:140px;
       font-family: 'Poppins', sans-serif; font-size: 1.05rem;
     }
-    .stButton>button { border-radius:14px; padding:12px 24px;
+    .stButton>button {
+      border-radius:14px; padding:12px 24px;
       background-image: linear-gradient(90deg, var(--accent1), var(--accent2));
       color: #fff; font-weight:600; font-size: 1rem; border:none;
-      box-shadow: var(--button-shadow); }
+      box-shadow: var(--button-shadow);
+    }
     .stButton>button:hover { transform: translateY(-2px); }
     [data-testid="stSidebar"] { background: var(--sidebar-bg); padding-top: 1rem; }
     .stTabs [role="tablist"] { gap: 20px; justify-content: center; }
@@ -149,26 +148,27 @@ with col1:
         if not english_text.strip():
             st.warning("Please enter some English text.")
         else:
-            try:
-                #try Render API first
-                resp = requests.post(
-                    "https://aurora-api.onrender.com/translate",
-                    json={"text": english_text, "target_lang": target_lang},
-                    timeout=10
-                )
-                data = resp.json()
-                if "translation" in data:
-                    translated = data["translation"]
-                else:
-                    raise Exception("Invalid API response")
-            except Exception as e:
-                if target_lang == "Hindi":
-                    model, src_tok, tgt_tok = get_hi_bundle()
-                else:
-                    model, src_tok, tgt_tok = get_hinglish_bundle()
-                translated = translate_greedy(model, src_tok, tgt_tok, english_text)
+            translated = None
+            with st.spinner("Translating..."):
+                try:
+                    resp = requests.post(
+                        API_URL,
+                        json={"text": english_text, "target_lang": target_lang},
+                        timeout=10,
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    if isinstance(data, dict) and "translation" in data:
+                        translated = data["translation"]
+                    else:
+                        raise ValueError("Invalid API response shape")
+                except Exception:
+                    if target_lang == "Hindi":
+                        model, src_tok, tgt_tok = get_hi_bundle()
+                    else:
+                        model, src_tok, tgt_tok = get_hinglish_bundle()
+                    translated = translate_greedy(model, src_tok, tgt_tok, english_text)
 
-            #save in session state
             st.session_state["translated_text"] = translated
             st.session_state["english_text"] = english_text
             st.session_state.pop("generated_text", None)

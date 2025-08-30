@@ -1,29 +1,44 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 from fastapi import FastAPI
 from pydantic import BaseModel
-from utils import load_translation_bundle, translate_greedy
+from tensorflow.keras.models import load_model
+from utils import load_pickle, transblock, tokposemb, translate_greedy
 
 app = FastAPI(title="Aurora API", version="1.0")
 
-#loading once at startup but not every req
-hi_model, hi_src_tok, hi_tgt_tok = load_translation_bundle(
-    "models/besteng2hindi.keras",
-    "models/en_tokenizer.pkl",
-    "models/hi_tokenizer.pkl"
-)
+try:
+    hi_model = load_model(
+        "models/besteng2hindi.keras",
+        compile=False,
+        custom_objects={"transblock": transblock, "tokposemb": tokposemb}
+    )
+    hi_src_tok = load_pickle("models/en_tokenizer.pkl")
+    hi_tgt_tok = load_pickle("models/hi_tokenizer.pkl")
+except Exception as e:
+    raise RuntimeError(f"Failed loading Hindi model: {e}")
 
-hing_model, hing_src_tok, hing_tgt_tok = load_translation_bundle(
-    "models/besteng2hinglish.keras",
-    "models/eng_tokenizer.pkl",
-    "models/hing_tokenizer.pkl"
-)
+try:
+    hing_model = load_model(
+        "models/besteng2hinglish.keras",
+        compile=False,
+        custom_objects={"transblock": transblock, "tokposemb": tokposemb}
+    )
+    hing_src_tok = load_pickle("models/eng_tokenizer.pkl")
+    hing_tgt_tok = load_pickle("models/hing_tokenizer.pkl")
+except Exception as e:
+    raise RuntimeError(f"Failed loading Hinglish model: {e}")
 
 class TranslateRequest(BaseModel):
     text: str
-    target_lang: str  
+    target_lang: str
+
 
 @app.get("/")
 def root():
     return {"message": "Aurora API is running 🚀"}
+
 
 @app.post("/translate")
 def translate(req: TranslateRequest):
@@ -35,4 +50,8 @@ def translate(req: TranslateRequest):
     else:
         out = translate_greedy(hing_model, hing_src_tok, hing_tgt_tok, req.text)
 
-    return {"input": req.text, "target_lang": req.target_lang, "translation": out}
+    return {
+        "input": req.text,
+        "target_lang": req.target_lang,
+        "translation": out
+    }
