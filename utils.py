@@ -162,23 +162,13 @@ from dotenv import load_dotenv
 import streamlit as st
 
 def init_gemini():
-    """
-    Initialize Google Generative AI (Gemini) client.
-
-    Behavior:
-    - Prefer Streamlit secrets (st.secrets["GEMINI_API_KEY"]) when available (deployed on Streamlit Cloud).
-    - Fallback to local .env variable (loaded via python-dotenv) when Streamlit secrets are not available (local dev).
-    - Raises RuntimeError if no key is found.
-    """
     api_key = None
-    # First try Streamlit secrets (works on Streamlit Community Cloud)
     try:
         api_key = st.secrets["GEMINI_API_KEY"]
     except Exception:
         api_key = None
 
     if not api_key:
-        # Fallback for local development: load from .env
         load_dotenv()
         api_key = os.getenv("GEMINI_API_KEY", "")
 
