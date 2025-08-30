@@ -10,3 +10,5 @@ transformers
 langchain
 langchain-community
 beautifulsoup4
+fastapi
+uvicorn
