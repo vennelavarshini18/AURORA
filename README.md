@@ -49,11 +49,6 @@ Aurora goes beyond simple translation by integrating **Google Gemini** with **La
 - Uses **routing & fallback**: prefer tool-augmented, grounded responses; fall back to Gemini generation if tools are not useful.
 - Core concepts: *Sandboxing*, *Safe execution*, *Routing / Fallback strategies*.
 
-### Core Concepts Integrated (At-a-glance)
-- **LangChain**: LLM Wrappers, Agents, Tools, Answer Grounding, RAG, Routing/Fallback, Structured Outputs.  
-- **Gemini (GenAI SDK)**: Generative Models, Prompt Engineering, Controlled Style Transfer, Instruction Following, Script Enforcement, Sandboxing.  
-- **Cross-cutting**: Guardrails, Human-in-the-loop Controls, Knowledge Enrichment, Hybrid Retrieval + Generation.
-
 This hybrid design makes Aurora stand out as both **functional and creative**.
 
 ## Tech Stack  
