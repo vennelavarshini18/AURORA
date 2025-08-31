@@ -24,12 +24,35 @@ Aurora includes a **custom translation model** trained with **TensorFlow-Keras**
 - Focuses on capturing **meaningful embeddings** → outputs are **clear, concise, and meaning-preserving**.  
 - Outperformed traditional Transformer pipelines on small-scale bilingual data.  
 
-### Generative AI Layer (Gemini + LangChain)  
-Beyond translation, Aurora integrates **Google Gemini** + **LangChain Tools** to enable creative workflows:  
-1. **Style Transfer** – Rewrite text in different tones (e.g., humorous, inspirational, poetic). 
-2. **Polish Writing** – Refine grammar, structure, and flow for professional output.  
-3. **Audience Adaptation** – Personalize text for specific audiences like children, corporate leaders, or peers.  
-4. **Knowledge Enrichment** – Dynamically fetch **trusted contextual knowledge** via Wikipedia/DuckDuckGo (through LangChain).  
+### Generative AI Layer (Gemini + LangChain)
+
+Aurora goes beyond simple translation by integrating **Google Gemini** with **LangChain’s agent + tool ecosystem**, enabling powerful, controlled workflows that combine generation, retrieval, and safe tool usage.
+
+#### 1. Style Transfer & Audience Adaptation
+- Apply **controlled style transfer** (e.g., humorous, poetic, formal) and **audience-specific adaptation** (children, corporate leaders, peers).
+- Uses **prompt engineering**, **instruction-following**, and **human-in-the-loop controls** (presets for tone, length, and script enforcement).
+- Core concepts: *Conditional generation*, *Prompt conditioning*, *Style presets*.
+
+#### 2. Polish & Refine Writing
+- Improve grammar, structure, and fluency to produce professional-grade output.
+- Enforces **guardrails** (script enforcement: Hinglish vs. Hindi), **structured outputs**, and **constrained generation** (max-words, output-only rules).
+- Core concepts: *Controlled generation*, *Output constraints*, *Quality refinement*.
+
+#### 3. Knowledge Enrichment & Grounding
+- Dynamically fetch **trusted contextual knowledge** via Wikipedia / DuckDuckGo when helpful.
+- LangChain **agents** decide whether to call **tools** (search, wiki, keyword extraction, math) and synthesize results.
+- This creates **Retrieval-Augmented Generation (RAG)** workflows that **ground** the LLM and reduce hallucinations.
+- Core concepts: *Agents*, *Tools*, *Answer grounding*, *RAG*.
+
+#### 4. Safe & Controlled Reasoning
+- Handle arithmetic and small computations via a **sandboxed math evaluator** (no arbitrary `eval`), ensuring execution safety.
+- Uses **routing & fallback**: prefer tool-augmented, grounded responses; fall back to Gemini generation if tools are not useful.
+- Core concepts: *Sandboxing*, *Safe execution*, *Routing / Fallback strategies*.
+
+### Core Concepts Integrated (At-a-glance)
+- **LangChain**: LLM Wrappers, Agents, Tools, Answer Grounding, RAG, Routing/Fallback, Structured Outputs.  
+- **Gemini (GenAI SDK)**: Generative Models, Prompt Engineering, Controlled Style Transfer, Instruction Following, Script Enforcement, Sandboxing.  
+- **Cross-cutting**: Guardrails, Human-in-the-loop Controls, Knowledge Enrichment, Hybrid Retrieval + Generation.
 
 This hybrid design makes Aurora stand out as both **functional and creative**.
 
